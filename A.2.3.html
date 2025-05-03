@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MSME Report (January to December)</title>
+  <style>
+    table, th, td {
+      border: 1px solid #000;
+      border-collapse: collapse;
+      text-align: center;
+      padding: 5px;
+    }
+    th {
+      background-color: #e0e0e0;
+    }
+    input {
+      width: 60px;
+      text-align: right;
+    }
+    .bold {
+      font-weight: bold;
+      background-color: #f7f7f7;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+      resize: none;
+    }
+    #resetBtn {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: #c62828;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #resetBtn:hover {
+      background-color: #b71c1c;
+    }
+  </style>
+</head>
+<body>
+
+<h2>A.2.3. MSMEs Assisted under the Priority Industry of Region</h2>
+
+<table id="reportTable">
+  <thead>
+    <tr>
+      <th>Period</th>
+      <th>PFN Calamansi</th>
+      <th>PFN Cashew</th>
+      <th>PFN Others</th>
+      <th>Wearables and Homestyle</th>
+      <th>Cacao</th>
+      <th>Tuna (OCM)</th>
+      <th>Salt (OCM)</th>
+      <th>Rubber</th>
+      <th>Bamboo</th>
+      <th>Tourism</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+  <tfoot>
+    <tr class="bold" id="totalsRow">
+      <td>Total</td>
+      <!-- Totals inserted dynamically -->
+    </tr>
+    <tr>
+      <td colspan="12">
+        <textarea id="notes" placeholder="Enter any notes here..."></textarea>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<button id="resetBtn" onclick="resetAll()">Reset All Data</button>
+
+<script>
+const periods = [
+  "January", "February", "March", "April",
+  "May", "June", "July", "August",
+  "September", "October", "November", "December"
+];
+
+const industryLabels = [
+  { id: "PFNCalamansi", label: "PFN Calamansi" },
+  { id: "PFNCashew", label: "PFN Cashew" },
+  { id: "PFNOthers", label: "PFN Others" },
+  { id: "Wearables", label: "Wearables and Homestyle" },
+  { id: "Cacao", label: "Cacao" },
+  { id: "Tuna", label: "Tuna (OCM)" },
+  { id: "Salt", label: "Salt (OCM)" },
+  { id: "Rubber", label: "Rubber" },
+  { id: "Bamboo", label: "Bamboo" },
+  { id: "Tourism", label: "Tourism" }
+];
+
+const tableBody = document.getElementById("tableBody");
+const totalsRow = document.getElementById("totalsRow");
+
+// Add totals row cells dynamically
+industryLabels.forEach(ind => {
+  const td = document.createElement("td");
+  td.id = "total" + ind.id;
+  td.innerText = "0";
+  totalsRow.appendChild(td);
+});
+totalsRow.innerHTML += '<td id="totalOverall">0</td>';
+
+// Load saved data
+const savedData = JSON.parse(localStorage.getItem("msmeRegionData")) || {};
+const savedNotes = localStorage.getItem("msmeRegionNotes") || "";
+
+// Create rows for each month
+periods.forEach((period, rowIdx) => {
+  const row = document.createElement("tr");
+  row.dataset.index = rowIdx;
+
+  let html = `<td>${period}</td>`;
+
+  industryLabels.forEach((_, colIdx) => {
+    const savedValue = savedData[rowIdx]?.[colIdx] ?? 0;
+    html += `<td><input type="number" min="0" value="${savedValue}" oninput="calculateAndSave()"></td>`;
+  });
+
+  html += `<td class="bold" id="total${rowIdx}">0</td>`;
+  row.innerHTML = html;
+  tableBody.appendChild(row);
+});
+
+document.getElementById("notes").value = savedNotes;
+
+function calculateAndSave() {
+  const numIndustries = industryLabels.length;
+  const rowTotals = [];
+  const colTotals = Array(numIndustries).fill(0);
+  let grandTotal = 0;
+
+  const currentData = {};
+
+  periods.forEach((_, rowIdx) => {
+    const row = document.querySelector(`tr[data-index="${rowIdx}"]`);
+    const inputs = row.querySelectorAll("input");
+    let rowTotal = 0;
+
+    currentData[rowIdx] = [];
+
+    inputs.forEach((input, colIdx) => {
+      const val = parseFloat(input.value) || 0;
+      rowTotal += val;
+      colTotals[colIdx] += val;
+      currentData[rowIdx][colIdx] = val;
+    });
+
+    document.getElementById(`total${rowIdx}`).innerText = rowTotal;
+    grandTotal += rowTotal;
+  });
+
+  // Save to localStorage
+  localStorage.setItem("msmeRegionData", JSON.stringify(currentData));
+  localStorage.setItem("msmeRegionNotes", document.getElementById("notes").value);
+
+  // Update column totals
+  industryLabels.forEach((ind, i) => {
+    document.getElementById(`total${ind.id}`).innerText = colTotals[i];
+  });
+
+  // Update overall total
+  document.getElementById("totalOverall").innerText = grandTotal;
+}
+
+document.getElementById("notes").addEventListener("input", () => {
+  localStorage.setItem("msmeRegionNotes", document.getElementById("notes").value);
+});
+
+function resetAll() {
+  if (confirm("Are you sure you want to reset all data?")) {
+    localStorage.removeItem("msmeRegionData");
+    localStorage.removeItem("msmeRegionNotes");
+    location.reload();
+  }
+}
+
+// Initial calculation
+calculateAndSave();
+</script>
+
+</body>
+</html>

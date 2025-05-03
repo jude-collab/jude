@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MSME Report (January to December)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #000;
+    }
+    th, td {
+      text-align: center;
+      padding: 6px;
+    }
+    th {
+      background-color: #e0e0e0;
+    }
+    input[type="number"], input[type="text"] {
+      width: 70px;
+      text-align: right;
+    }
+    input[type="text"] {
+      width: 100%;
+      text-align: left;
+    }
+    .bold {
+      font-weight: bold;
+      background-color: #f7f7f7;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+      resize: none;
+    }
+  </style>
+</head>
+<body>
+
+<h2>B. Frontline Client Servicing</h2>
+<h2>B.1.1. Processing of Documents</h2>
+
+<table id="reportTable">
+  <thead>
+    <tr>
+      <th rowspan="3">Period</th>
+      <th colspan="5">Business Name Registration</th>
+      <th colspan="3">BMBE Registration</th>
+      <th colspan="4">Other Registrations</th>
+    </tr>
+    <tr>
+      <th rowspan="2">No. of BN application received</th>
+      <th rowspan="2">No. of BNR approved</th>
+      <th colspan="3">Paid thru*</th>
+      <th rowspan="2">No. of BMBE applications received</th>
+      <th rowspan="2">No. of CA approved</th>
+      <th rowspan="2">No. of CA issued on time</th>
+      <th rowspan="2">BN Cancellation</th>
+      <th rowspan="2">CTC</th>
+      <th rowspan="2">No. of licenses, accreditation, or registration***</th>
+      <th rowspan="2">Specific name of licenses, accreditation, or registration</th>
+    </tr>
+    <tr>
+      <th>PEPP</th>
+      <th>Dragonpay</th>
+      <th>Others**</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+  <tfoot>
+    <tr class="bold">
+      <td>Total</td>
+      <td id="totalBNApplicationsReceived">0</td>
+      <td id="totalBNRApproved">0</td>
+      <td id="totalPEPP">0</td>
+      <td id="totalDragonpay">0</td>
+      <td id="totalOthers">0</td>
+      <td id="totalBMBEApplicationsReceived">0</td>
+      <td id="totalCAApproved">0</td>
+      <td id="totalCAIssued">0</td>
+      <td id="totalBNCancellation">0</td>
+      <td id="totalCTC">0</td>
+      <td id="totalOtherLicenses">0</td>
+      <td id="totalSpecificLicenses">-</td>
+    </tr>
+    <tr>
+      <td colspan="14">
+        <textarea id="notes" placeholder="Enter any notes here..." oninput="saveData()"></textarea>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<!-- Side notes -->
+<div class="side-note">
+  *For BN application received and processed by Negosyo Center
+</div>
+<div class="side-note">
+  **Paid thru others. Paid thru other payment center except Provincial Office
+</div>
+<div class="side-note">
+  ***Accepts forms for SRS, Client Complaints, IPO, others
+</div>
+
+<script>
+  const periods = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const fieldIds = [
+    "BNApplicationsReceived", "BNRApproved", "PEPP", "Dragonpay", "Others",
+    "BMBEApplicationsReceived", "CAApproved", "CAIssued",
+    "BNCancellation", "CTC", "OtherLicenses", "SpecificLicenses"
+  ];
+
+  const tableBody = document.getElementById("tableBody");
+
+  // Create table rows with input fields
+  periods.forEach((period, rowIndex) => {
+    const row = document.createElement("tr");
+    row.dataset.index = rowIndex;
+
+    let html = `<td>${period}</td>`;
+    fieldIds.forEach((fieldId) => {
+      const inputId = `${fieldId}_${rowIndex}`;
+      if (fieldId === "SpecificLicenses") {
+        html += `<td><input type="text" id="${inputId}" oninput="saveData()"></td>`;
+      } else {
+        html += `<td><input type="number" id="${inputId}" min="0" value="0" oninput="calculateTotal(); saveData();"></td>`;
+      }
+    });
+
+    row.innerHTML = html;
+    tableBody.appendChild(row);
+  });
+
+  function calculateTotal() {
+    const columnTotals = Array(fieldIds.length).fill(0);
+
+    periods.forEach((_, rowIndex) => {
+      fieldIds.forEach((fieldId, colIndex) => {
+        const input = document.getElementById(`${fieldId}_${rowIndex}`);
+        if (fieldId !== "SpecificLicenses") {
+          const value = parseFloat(input.value) || 0;
+          columnTotals[colIndex] += value;
+        }
+      });
+    });
+
+    fieldIds.forEach((id, i) => {
+      const totalCell = document.getElementById(`total${id}`);
+      if (id !== "SpecificLicenses") {
+        totalCell.innerText = columnTotals[i];
+      } else {
+        totalCell.innerText = "-";
+      }
+    });
+  }
+
+  function saveData() {
+    const data = {};
+    periods.forEach((_, rowIndex) => {
+      fieldIds.forEach((fieldId) => {
+        const inputId = `${fieldId}_${rowIndex}`;
+        const element = document.getElementById(inputId);
+        data[inputId] = element.value || "";
+      });
+    });
+    data["notes"] = document.getElementById("notes").value;
+    localStorage.setItem("reportData", JSON.stringify(data));
+  }
+
+  function loadData() {
+    const savedData = JSON.parse(localStorage.getItem("reportData"));
+    if (!savedData) return;
+
+    periods.forEach((_, rowIndex) => {
+      fieldIds.forEach((fieldId) => {
+        const inputId = `${fieldId}_${rowIndex}`;
+        const input = document.getElementById(inputId);
+        if (savedData[inputId] !== undefined) {
+          input.value = savedData[inputId];
+        }
+      });
+    });
+
+    if (savedData["notes"]) {
+      document.getElementById("notes").value = savedData["notes"];
+    }
+
+    calculateTotal();
+  }
+
+  window.onload = loadData;
+</script>
+
+</body>
+</html>
